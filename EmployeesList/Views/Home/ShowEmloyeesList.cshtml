@@ -1,0 +1,207 @@
+﻿@model EmployeesList.ViewModels.ShowEmloyeesListViewModel;
+@using System.Web; 
+@{
+    ViewData["Title"] = "Список сотрудников";
+}
+
+<style>
+    #idColumn {
+        color: darkgrey;
+        visibility: hidden;
+    }
+
+    .noneSelectTekst {
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+    }
+</style>
+
+<div>
+    <div>
+        <h3>&emsp;&emsp;&ensp;Список сотрудников: (@Model.Department)</h3>
+
+        <label>&emsp;&emsp;&emsp;&emsp;&ensp;Показать идентификационный номер&ensp;</label>
+        <input type="checkbox" onclick="ChangeVisibilityIdColumn()" />
+
+        <form asp-action="ShowEmloyeesList" method="post">
+            <label>&emsp;&emsp;&emsp;&emsp;&ensp;Показать сотрудников отдела:&ensp;</label>
+            <select id="setDepartment" asp-for="Department">
+            </select>
+            <input type="submit" value="Отправить" />
+        </form>
+    </div>
+    <table class="table" id="sortTable">
+        <thead>
+            <tr>
+                <th class="noneSelectTekst" id="idColumn" data-type="number">Id</th>
+                <th class="noneSelectTekst" data-type="string">Имя</th>
+                <th class="noneSelectTekst" data-type="string">Фамилия</th>
+                <th class="noneSelectTekst" data-type="number">Возраст</th>
+                <th class="noneSelectTekst" data-type="string">Отдел</th>
+                <th class="noneSelectTekst" data-type="string">Должность</th>
+                <th class="noneSelectTekst" data-type="string">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Employees.Count() > 0)
+            {
+                foreach (var item in Model.Employees)
+                {
+                    <tr>
+                        <td id="idColumn">@item.Id</td>
+                        <td>@item.FirstName</td>
+                        <td>@item.LastName</td>
+                        <td>@item.Age</td>
+                        <td>@item.Department.DepartmentName</td>
+                        <td>@item.PositionStatus</td>
+                        <td>
+                            <a asp-action="ChangeEmployee" asp-route-idEmployee="@item.Id">Изменить</a>
+                            &ensp;
+                            <a asp-action="RemoveEmloyeeToBasket" asp-route-idEmployee="@item.Id" asp-route-setDepartment="@Model.Department" style="color:darkorange">Удалить</a>
+                        </td>
+                    </tr>
+                }
+            }
+
+        </tbody>
+    </table>
+    @if (Model.Employees.Count() == 0)
+    {
+        <p style="color:darkgrey">&emsp;&emsp;&emsp;&emsp;&ensp;Список сотрудников пуст</p>
+    }
+</div>
+
+@*Подключаем JQuery*@
+<script src="https://code.jquery.com/jquery-2.2.4.js"
+        integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI="
+        crossorigin="anonymous"></script>
+
+@*Сортировка таблицы*@
+<script>
+    const table = document.getElementById('sortTable');
+    const headers = table.querySelectorAll('th');
+    const tBody = table.querySelector('tbody');
+    const rows = tBody.querySelectorAll('tr');
+    const newRows = Array.from(rows);
+    var sortDirection = 'desc';
+
+    for (var i = 0; i < headers.length - 1; i++) {
+        headers[i].style.cursor = "pointer";
+        let indexEl = i;
+        headers[i].addEventListener('click', function () {
+            sortByColumn(indexEl);
+        });
+    }
+
+    function sortByColumn(index) {
+        var dataType = headers[index].getAttribute('data-type');
+
+        switch (sortDirection) {
+            case 'desc':
+                sortDirection = 'asc';
+                break;
+            case 'asc':
+                sortDirection = 'desc';
+                break;
+        }
+
+        newRows.sort(function (rowA, rowB) {
+            switch (dataType) {
+                case 'string':
+                    var cellA = rowA.querySelectorAll('td')[index].innerHTML;
+                    var cellB = rowB.querySelectorAll('td')[index].innerHTML;
+                    break;
+                case 'number':
+                    var cellA = parseInt(rowA.querySelectorAll('td')[index].innerHTML, 10);
+                    var cellB = parseInt(rowB.querySelectorAll('td')[index].innerHTML, 10);
+                    break;
+            }
+
+            switch (sortDirection) {
+                case 'asc':
+                    switch (true) {
+                        case cellA > cellB: return 1;
+                            break;
+                        case cellA < cellB: return -1;
+                            break;
+                        case cellA === cellB: return 0;
+                            break;
+                    }
+                    break;
+
+                case 'desc':
+                    switch (true) {
+                        case cellA > cellB: return -1;
+                            break;
+                        case cellA < cellB: return 1;
+                            break;
+                        case cellA === cellB: return 0;
+                            break;
+                    }
+                    break;
+            }
+        });
+
+        for (var i = 0; i < rows.length; i++) {
+            tBody.removeChild(rows[i]);
+        }
+        for (var i = 0; i < newRows.length; i++) {
+            tBody.appendChild(newRows[i]);
+        }
+    };
+</script>
+
+@*Изменение видимости столбца Id*@
+<script>
+    var changeIndex = 1;
+    const idColumn = document.querySelectorAll('#idColumn');
+    function ChangeVisibilityIdColumn() {
+        changeIndex++;
+        if (changeIndex % 2 == 0) {
+            for (var i = 0; i < idColumn.length; i++) {
+                idColumn[i].style.visibility = 'visible';
+            }
+        }
+        else {
+            for (var i = 0; i < idColumn.length; i++) {
+                idColumn[i].style.visibility = 'hidden';
+            }
+        }
+    };
+</script>
+
+@*Получение доступных отделов*@
+<script>
+    let setDepartment = document.getElementById("setDepartment");
+    $.ajax("Home/GetDepatmentsToView",
+        {
+            success: function (data) {
+                let optEl = document.createElement("option");
+                optEl.innerHTML = 'Все отделы';
+                setDepartment.appendChild(optEl);
+
+                for (var i = 0; i < data.length; i++) {
+                    let optEl = document.createElement("option");
+                    optEl.innerHTML = data[i];
+                    setDepartment.appendChild(optEl);
+                }
+            }
+        }
+    );
+
+    window.onload = function () {
+        let selectedDepartment = '@Html.Raw(HttpUtility.HtmlDecode(Model.Department))';
+        let listOptions = setDepartment.querySelectorAll('option');
+        for (var i = 0; i < listOptions.length; i++) {
+            if (listOptions[i].innerHTML == selectedDepartment) {
+                listOptions[i].setAttribute('selected', 'selected');
+            }
+        }
+    }
+
+</script>

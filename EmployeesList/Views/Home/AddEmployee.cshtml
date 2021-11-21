@@ -1,0 +1,109 @@
+﻿@model EmployeesList.ViewModels.AddEmployeeViewModel;
+@{
+    ViewData["Title"] = "Добавление сотрудника";
+}
+
+@*Подключаем JQuery*@
+<script src="https://code.jquery.com/jquery-2.2.4.js"
+        integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI="
+        crossorigin="anonymous"></script>
+
+@*Используемые функции*@
+<script>
+    /*Получаем отделы из базы данных*/
+    function GetDepartmens()
+    {
+        $.ajax("GetDepatmentsToView",
+            {
+                success: function (data) {                   
+                    for (var i = 0; i < data.length; i++) {
+                        let optEl = document.createElement("option");
+                        optEl.innerHTML = data[i];
+                        selectDepartment.appendChild(optEl);
+                    }
+                    GetPositions(data[0]);
+                }
+            }
+        );
+    }
+
+    /*Получаем доступные должности отдела*/
+    function GetPositions(viewDepatmentName) {
+        $.ajax("GetDepatmentPositionsToView?" + $.param({ depatmentName: viewDepatmentName }),
+            {
+                success: function (data) {
+                    while (selectPosition.firstChild) {
+                        selectPosition.removeChild(selectPosition.firstChild);
+                    }
+                    for (var i = 0; i < data.length; i++) {
+                        let optEl = document.createElement("option");
+                        optEl.innerHTML = data[i];
+                        selectPosition.appendChild(optEl);
+                    }
+                }
+            }
+        );
+    }
+</script>
+
+<div class="text-center">
+    <h3>Добавление сотрудника</h3>
+    <div style="width: 350px; text-align: center; margin: 0 auto;">
+        <form method="post" asp-action="AddEmployeeToDb">
+            <ul style="list-style-type:none; text-align:right">
+                <li>
+                    <label>Имя: </label>
+                    <input type="text" asp-for="FirstName" value="" />
+                    <br />
+                    <span asp-validation-for="FirstName" style="color:darkorange" id="FirstNameValidation"></span>
+                </li>
+                <li>
+                    <label>Фамилия: </label>
+                    <input type="text" asp-for="LastName" value="" />
+                    <br />
+                    <span asp-validation-for="LastName" style="color:darkorange" id="LastNameValidation"></span>
+                </li>
+                <li> 
+                    <label>Возраст: </label>
+                    <input type="text" asp-for="Age" value="" />
+                    <br />
+                    <span asp-validation-for="Age" style="color:darkorange" id="AgeValidation"></span>
+                </li>
+                <li>
+                    <label>Отдел: </label>
+                    <select style="height:30px; width:190px" id="departmentId" asp-for="Department">
+                    </select>
+                    <script>
+                        var selectDepartment = document.getElementById("departmentId");
+                        GetDepartmens();
+                    </script>
+                </li>
+                <li>
+                    <label>Должность: </label>
+                    <select style="height:30px; width:190px" id="positionId" asp-for="Position">
+                    </select>
+                    <script>
+                        var selectPosition = document.getElementById("positionId");
+                    </script>
+                </li>
+                <li>
+                    <input type="submit" value="Отправить" />
+                </li>
+            </ul>
+        </form>
+    </div>
+</div>
+
+@*Для валидации модели*@
+@section scripts{
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+}
+
+@*События*@
+<script>       
+    selectDepartment.addEventListener("change", function () {
+        var choiceDepatmentName = selectDepartment.value;
+        GetPositions(choiceDepatmentName);
+    });   
+</script>

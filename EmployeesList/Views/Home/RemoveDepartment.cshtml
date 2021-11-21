@@ -1,0 +1,243 @@
+﻿@model EmployeesList.ViewModels.RemoveDepartmentViewModel;
+@using System.Web;
+@{
+    ViewData["Title"] = "Удалить отдел";
+}
+
+@*Подключаем JQuery*@
+<script src="https://code.jquery.com/jquery-2.2.4.js"
+        integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI="
+        crossorigin="anonymous"></script>
+
+@*Используемые функции*@
+<script>
+    /*Получаем отделы из базы данных*/
+    function GetDepartmens() {
+        $.ajax("GetDepatmentsToView",
+            {
+                success: function (data) {
+                    for (var i = 0; i < data.length; i++) {
+                        if (data[i] == '@Html.Raw(HttpUtility.HtmlDecode(Model.DepartmentName))') {
+                            var checkDep = i;
+                            continue;
+                        }
+                        for (var j = 0; j < selectsDepartment.length; j++) {
+                            let optEl = document.createElement("option");
+                            optEl.innerHTML = data[i];
+                            selectsDepartment[j].appendChild(optEl);
+                        }
+                    }
+
+                    if (data.length<2) {
+                        let checkCountDep = document.getElementById('checkCountDep');
+                        console.log(checkCountDep.innerHTML);
+                        checkCountDep.setAttribute('style', 'display:normal; color:red');
+                    }
+                    else if (checkDep==0) {
+                        for (var i = 0; i < selectsPosition.length; i++) {
+                            GetPositions(data[1], selectsPosition[i]);
+                        }
+                    }
+                    else {
+                        for (var i = 0; i < selectsPosition.length; i++) {
+                            GetPositions(data[0], selectsPosition[i]);
+                        }
+                    }                    
+                }
+            }
+        );
+    }
+
+    /*Получаем доступные должности отдела*/
+    function GetPositions(viewDepatmentName, toSelect) {
+        $.ajax("GetDepatmentPositionsToView?" + $.param({ depatmentName: viewDepatmentName }),
+            {
+                success: function (data) {
+                    while (toSelect.firstChild) {
+                        toSelect.removeChild(toSelect.firstChild);
+                    }
+                    for (var i = 0; i < data.length; i++) {
+                        let optEl = document.createElement("option");
+                        optEl.innerHTML = data[i];
+                        toSelect.appendChild(optEl);
+                    }
+                }
+            }
+        );
+    }
+</script>
+
+<style>
+    #idColumn {
+        color: darkgrey;
+    }
+
+    .noneSelectTekst {
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+    }
+</style>
+
+<div>
+    <h4>&emsp;&emsp;&ensp;Удаление отдела "@Model.DepartmentName".</h4>
+    <h4>&emsp;&emsp;&ensp;При необходимости, распределите сотрудников данного отдела.</h4>
+    <h4 style="color:darkorange">&emsp;&emsp;&ensp;Не распределенные сотрудники будут удалены вместе с отделом.</h4>
+    <h4 id="checkCountDep" style="color:red; display:none">&emsp;&emsp;&ensp;Отсутствуют отделы для перевода.</h4>
+    <br />
+    <h3>&emsp;&emsp;&ensp;Список сотрудников:</h3>
+    <table class="table" id="employeeTable">
+        <thead>
+            <tr>
+                <th class="noneSelectTekst" id="idColumn">Id</th>
+                <th class="noneSelectTekst">Имя</th>
+                <th class="noneSelectTekst">Фамилия</th>
+                <th class="noneSelectTekst">Возраст</th>
+                <th class="noneSelectTekst">Изменить отдел</th>
+                <th class="noneSelectTekst">Изменить должность</th>
+                <th class="noneSelectTekst">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Employees.Count() > 0)
+            {
+                for (int i = 0; i < Model.Employees.Count(); i++)
+                {
+                    <tr>
+                        <td id="idColumn">@Model.Employees[i].Id</td>
+                        <td>@Model.Employees[i].FirstName</td>
+                        <td>@Model.Employees[i].LastName</td>
+                        <td>@Model.Employees[i].Age</td>
+                        <td>
+                            <select style="height:30px; width:190px" id="departmentId">
+                            </select>
+                        </td>
+                        <td>
+                            <select style="height:30px; width:190px" id="positionId">
+                            </select>
+                        </td>
+                        <td>
+                            <a style="color:green; cursor:pointer" onclick="EmployeeTransfer(@i)">Перевести</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    @if (Model.Employees.Count() == 0)
+    {
+        <p style="color:darkgrey">&emsp;&emsp;&emsp;&emsp;&ensp;Список сотрудников пуст</p>
+    }
+
+    <h3>&emsp;&emsp;&ensp;Список бывших сотрудников:</h3>
+    <table class="table" id="formerEmployeeTable">
+        <thead>
+            <tr>
+                <th class="noneSelectTekst" id="idColumn">Id</th>
+                <th class="noneSelectTekst">Имя</th>
+                <th class="noneSelectTekst">Фамилия</th>
+                <th class="noneSelectTekst">Возраст</th>
+                <th class="noneSelectTekst">Изменить отдел</th>
+                <th class="noneSelectTekst">Изменить должность</th>
+                <th class="noneSelectTekst">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.FormerEmployees.Count() > 0)
+            {
+                for (int i = 0; i < Model.FormerEmployees.Count(); i++)
+                {
+                    <tr>
+                        <td id="idColumn">@Model.FormerEmployees[i].Id</td>
+                        <td>@Model.FormerEmployees[i].FirstName</td>
+                        <td>@Model.FormerEmployees[i].LastName</td>
+                        <td>@Model.FormerEmployees[i].Age</td>
+                        <td>
+                            <select style="height:30px; width:190px" id="departmentId">
+                            </select>
+                        </td>
+                        <td>
+                            <select style="height:30px; width:190px" id="positionId">
+                            </select>
+                        </td>
+                        <td>
+                            <a style="color:green; cursor:pointer" onclick="FormerEmployeeTransfer(@i)">Перевести</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    @if (Model.FormerEmployees.Count() == 0)
+    {
+        <p style="color:darkgrey">&emsp;&emsp;&emsp;&emsp;&ensp;Список бывших сотрудников пуст</p>
+    }
+    <br />
+    <div style="text-align:right">
+        <form asp-action="RemoveDepartmentAndAllEmployees" method="post">
+            <input style="visibility:hidden" type="text" asp-for="DepartmentName" value="@Model.DepartmentName" />
+            <label style="font-weight:bold">Удалить отдел</label>
+            <input style="color:darkorange" type="submit" value="Отправить" />
+            &emsp;&emsp;
+        </form>
+    </div>
+</div>
+
+<script>
+    @*const removedDepartment = '@Html.Raw(HttpUtility.HtmlDecode(Model.DepartmentName))';*@
+
+    var selectsDepartment = document.querySelectorAll("#departmentId");
+    var selectsPosition = document.querySelectorAll("#positionId");
+    GetDepartmens();
+
+    for (var i = 0; i < selectsDepartment.length; i++) {
+        let index = i;
+        selectsDepartment[index].addEventListener('change', function () {
+            GetPositions(selectsDepartment[index].value, selectsPosition[index])
+        });
+    }
+
+    /*Перевод сотрудника в другой отдел*/
+    var employeeTable = document.getElementById('employeeTable');
+    var etBody = employeeTable.querySelector('tbody');
+    var trListFromEtBody = etBody.querySelectorAll('tr');
+    function EmployeeTransfer(index)
+    {
+        let tdList = trListFromEtBody[index].querySelectorAll('td');
+        let itemId = tdList[0].innerHTML;
+        let itemDepartment = tdList[4].firstElementChild.value;
+        let itemPosition = tdList[5].firstElementChild.value;
+
+        $.ajax("ChangeEmployeeFrom_RemovedDepartment_ToDb?" + $.param({ idEmployee: itemId, newDepartment: itemDepartment, newPosition: itemPosition, statusEmployee:'employee'}),
+            {
+                success: function () {
+                    etBody.removeChild(trListFromEtBody[index]);                      
+                }
+            }
+        );
+    }
+
+    /*Перевод бывшего сотрудника в другой отдел*/
+    var formerEmployeeTable = document.getElementById('formerEmployeeTable');
+    var fetBody = formerEmployeeTable.querySelector('tbody');
+    var trListFromFetBody = fetBody.querySelectorAll('tr');
+    function FormerEmployeeTransfer(index)
+    {
+        let tdList = trListFromFetBody[index].querySelectorAll('td');
+        let itemId = tdList[0].innerHTML;
+        let itemDepartment = tdList[4].firstElementChild.value;
+        let itemPosition = tdList[5].firstElementChild.value;
+
+        $.ajax("ChangeEmployeeFrom_RemovedDepartment_ToDb?" + $.param({ idEmployee: itemId, newDepartment: itemDepartment, newPosition: itemPosition, statusEmployee: 'formerEmployee'}),
+            {
+                success: function () {
+                    fetBody.removeChild(trListFromFetBody[index]);
+                }
+            }
+        );
+    }
+</script>
